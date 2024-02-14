@@ -1,2 +1,2 @@
 # gitmon
-monitor git repos for corresponding upstream changes
+Monitor git repos for corresponding upstream changes
