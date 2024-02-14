@@ -23,10 +23,18 @@ func (p *program) Start(s service.Service) error {
 
 func (p *program) run() {
 	for {
+		<-time.After(time.Second * 300)
+		projectPathsToMonitor, err := gitmon.LoadConfig()
+		if err != nil {
+			continue
+		}
+		fmt.Printf("staring new cycle for all repos: %v", projectPathsToMonitor)
 
-		<-time.After(time.Second * 3)
-		config := gitmon.LoadConfig()
-		fmt.Printf("hello...%v", config)
+		for _, repo := range projectPathsToMonitor {
+			go func(r string) {
+				gitmon.FetchLatestCommits(r)
+			}(repo)
+		}
 	}
 }
 
