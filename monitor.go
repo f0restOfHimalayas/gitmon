@@ -3,6 +3,7 @@ package gitmon
 import (
 	"fmt"
 	"os/exec"
+	"regexp"
 
 	cfg "github.com/gookit/config/v2"
 )
@@ -15,13 +16,13 @@ func LoadConfig() ([]string, error) {
 	return cfg.Strings("projectPaths"), nil
 }
 
-func FetchLatestCommits(repoPath string) {
+func FetchLatestCommits(repoPath string) (string, string, error) {
 	cmd := exec.Command("git", "fetch")
 	cmd.Dir = repoPath
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println("Error executing command:", err)
-		return
+		return "", "", err
 	}
 
 	cmd = exec.Command("git", "log", "origin/master", "-1")
@@ -29,9 +30,25 @@ func FetchLatestCommits(repoPath string) {
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println("Error executing command:", err)
-		return
+		return "", "", err
 	}
 
-	// Print the output of the command
-	fmt.Println(fmt.Sprintf("\nRepo: %v,\nUpdate: %s\n", repoPath, string(output)))
+	fmt.Println(fmt.Sprintf("\nRepo: %v\n%s\n", repoPath, string(output)))
+
+	if len(output) == 0 {
+		fmt.Println("no new updates")
+		return "", "", err
+	}
+
+	commit := string(output)
+	return extractCommitID(commit), commit, err
+}
+
+func extractCommitID(commitMessage string) string {
+	re := regexp.MustCompile(`commit ([0-9a-f]{40})`)
+	match := re.FindStringSubmatch(commitMessage)
+	if len(match) >= 2 {
+		return match[1]
+	}
+	return ""
 }
