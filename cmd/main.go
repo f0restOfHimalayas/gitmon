@@ -22,28 +22,38 @@ func (p *program) Start(s service.Service) error {
 }
 
 func (p *program) run() {
-
-	var history = make(map[string]string)
+	history := make(map[string]string)
 	for {
 		<-time.After(time.Second * 10)
 		projectPathsToMonitor, err := gitmon.LoadConfig()
 		if err != nil {
 			continue
 		}
-		fmt.Printf("staring new cycle for all repos: %v", projectPathsToMonitor)
+		fmt.Printf("\nstaring new cycle for all repos: %v", projectPathsToMonitor)
 
 		for _, repo := range projectPathsToMonitor {
 			go func(r string) {
 				commitId, commits, err := gitmon.FetchLatestCommits(r)
 				if err != nil {
+					fmt.Errorf("%v", err)
 					return
 				}
 				if val, ok := history[r]; ok {
 					if commitId == val {
+						fmt.Printf("found in history...")
 						return
 					}
 				}
-				_ = beeep.Notify(fmt.Sprintf("GitMon: New updates: %s", r), fmt.Sprintf("\n%s\n%s\n", r, commits), "")
+				err = beeep.Notify(
+					fmt.Sprintf("GitMon: New updates: %s", r),
+					fmt.Sprintf("\n%s\n%s\n", r, commits),
+					"",
+				)
+				if err != nil {
+					fmt.Printf("notification failed with err %v", err)
+				} else {
+					fmt.Printf("no error while sending notification")
+				}
 				history[r] = commitId
 			}(repo)
 		}
@@ -55,6 +65,7 @@ func (p *program) Stop(s service.Service) error {
 }
 
 func main() {
+	gitmon.Log("startig gitmon....")
 	svcConfig := &service.Config{
 		Name:        "gitmon",
 		DisplayName: "gitmon",
