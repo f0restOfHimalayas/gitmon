@@ -1,6 +1,8 @@
 {
-  "outputPaths" : ["stdout", "/root/work/gitmon/cmd/log.log"],
+  "projectPaths" : ["c:\\projects\\my-project"],
+  "outputPaths" : ["c:\\gitmon\\gitmon.log"],
   "encoding" : "json",
+  "level": "debug",
   "encoderConfig" : {
     "messageKey": "message",
 	    "levelKey": "level",

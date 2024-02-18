@@ -21,7 +21,7 @@ func FetchLatestCommits(repoPath string) (string, string, error) {
 	cmd.Dir = repoPath
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println("Error executing command:", err)
+		Error(err, "Error executing command: git fetch")
 		return "", "", err
 	}
 
@@ -29,14 +29,14 @@ func FetchLatestCommits(repoPath string) (string, string, error) {
 	cmd.Dir = repoPath
 	output, err = cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println("Error executing command:", err)
+		Error(err, "Error executing command: git log origin/master -1")
 		return "", "", err
 	}
 
-	fmt.Println(fmt.Sprintf("\nRepo: %v\n%s\n", repoPath, string(output)))
+	Log(fmt.Sprintf("\nRepo: %v\n%s\n", repoPath, string(output)))
 
 	if len(output) == 0 {
-		fmt.Println("no new updates")
+		Log(fmt.Sprintf("no new updates in the repo %v", repoPath))
 		return "", "", err
 	}
 

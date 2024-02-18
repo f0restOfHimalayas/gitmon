@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/user"
 	"time"
 
 	"github.com/gen2brain/beeep"
@@ -22,25 +23,27 @@ func (p *program) Start(s service.Service) error {
 }
 
 func (p *program) run() {
+	gitmon.Log("started watching repos ...")
 	history := make(map[string]string)
 	for {
 		<-time.After(time.Second * 10)
 		projectPathsToMonitor, err := gitmon.LoadConfig()
 		if err != nil {
+			gitmon.Error(err, fmt.Sprintf("staring new cycle for all repos: %v", projectPathsToMonitor))
 			continue
 		}
-		fmt.Printf("\nstaring new cycle for all repos: %v", projectPathsToMonitor)
+		gitmon.Log(fmt.Sprintf("staring new cycle for all repos: %v", projectPathsToMonitor))
 
 		for _, repo := range projectPathsToMonitor {
 			go func(r string) {
 				commitId, commits, err := gitmon.FetchLatestCommits(r)
 				if err != nil {
-					fmt.Errorf("%v", err)
+					gitmon.Error(err, fmt.Sprintf("error while fetching latest commit for repo: %s", r))
 					return
 				}
 				if val, ok := history[r]; ok {
 					if commitId == val {
-						fmt.Printf("found in history...")
+						gitmon.Log("found in history...")
 						return
 					}
 				}
@@ -50,9 +53,9 @@ func (p *program) run() {
 					"",
 				)
 				if err != nil {
-					fmt.Printf("notification failed with err %v", err)
+					gitmon.Log(fmt.Sprintf("notification failed with err %v", err))
 				} else {
-					fmt.Printf("no error while sending notification")
+					gitmon.Log("no error while sending notification")
 				}
 				history[r] = commitId
 			}(repo)
@@ -65,7 +68,12 @@ func (p *program) Stop(s service.Service) error {
 }
 
 func main() {
-	gitmon.Log("startig gitmon....")
+	gitmon.Log("starting gitmon....")
+	usr, _ := user.Current()
+	hostname, _ := os.Hostname()
+	gitmon.Log(fmt.Sprintf("Current user info. Name=%s, Username=%s, HomeDir=%s", usr.Name, usr.Username, usr.HomeDir))
+	gitmon.Log(fmt.Sprintf("Current hostname is %s", hostname))
+
 	svcConfig := &service.Config{
 		Name:        "gitmon",
 		DisplayName: "gitmon",
